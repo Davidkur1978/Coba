@@ -1,0 +1,145 @@
+rpp-generator/
+├── pages/
+│   ├── index.jsimport { useState } from 'react';
+
+export default function Home() {
+  const [formData, setFormData] = useState({
+    namaSekolah: '',
+    namaGuru: '',
+    kelas: '',
+    fase: '',
+    semester: '',
+    mapel: '',
+    materi: '',
+    alokasiWaktu: '',
+    model: '',
+    tujuanPembelajaran: '',
+    profilPP: '',
+  });
+
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const generatePrompt = async () => {
+    const p = `Buatkan RPP berdasarkan Kurikulum Merdeka tahun 2025.
+
+Berikut ini datanya:
+- Jenjang: SMP
+- Nama Sekolah: ${formData.namaSekolah}
+- Nama Guru: ${formData.namaGuru}
+- Kelas: ${formData.kelas}
+- Fase: ${formData.fase}
+- Semester: ${formData.semester}
+- Mata Pelajaran: ${formData.mapel}
+- Materi Pokok: ${formData.materi}
+- Alokasi Waktu: ${formData.alokasiWaktu} JP
+- Model Pembelajaran: ${formData.model}
+- Tujuan Pembelajaran: ${formData.tujuanPembelajaran}
+- Profil Pelajar Pancasila: ${formData.profilPP}
+
+Tolong buatkan RPP lengkap mulai dari identitas, CP, TP, ATP, kegiatan pembelajaran, asesmen, dan refleksi.`;
+
+    setPrompt(p);
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/generate-rpp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: p }),
+      });
+      const data = await res.json();
+      setResponse(data.result);
+    } catch (err) {
+      console.error(err);
+      setResponse('Gagal memproses permintaan.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Generator RPP via ChatGPT</h1>
+      <div className="grid grid-cols-1 gap-2 mb-4">
+        {Object.keys(formData).map((field) => (
+          <input
+            key={field}
+            name={field}
+            value={formData[field]}
+            onChange={handleChange}
+            placeholder={field}
+            className="border p-2 rounded"
+          />
+        ))}
+      </div>
+      <button onClick={generatePrompt} className="bg-blue-600 text-white px-4 py-2 rounded">
+        {loading ? 'Menghasilkan...' : 'Buat RPP'}
+      </button>
+      {response && (
+        <div className="mt-6 whitespace-pre-wrap border p-4 bg-gray-100 rounded">
+          <h2 className="font-semibold mb-2">Hasil:</h2>
+          {response}
+        </div>
+      )}
+    </div>
+  );
+}
+│   └── api/
+│       └── generate-rpp.jsimport { OpenAI } from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  const { prompt } = req.body;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 1500,
+    });
+
+    res.status(200).json({ result: completion.choices[0].message.content });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'OpenAI error' });
+  }
+}
+├── .env.local
+OPENAI_API_KEY=sk-...
+├── package.json{
+  "name": "rpp-generator",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "openai": "^4.20.0"
+  }
+}
+├── README.# RPP Generator via ChatGPT
+
+Aplikasi untuk menghasilkan RPP otomatis sesuai Kurikulum Merdeka 2025.
+
+## Cara Menjalankan
+
+1. Salin `.env.example` menjadi `.env.local` dan isi API key OpenAI.
+2. Jalankan server:
